@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NIVOtv · Mando</title>
+<style>
+  :root { --bg:#0b0e14; --card:#161b26; --line:#232a3a; --fg:#eef1f8; --dim:#8b93a7; --acc:#e5484d; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:22px 18px 40px; }
+  h1 { font-size:26px; margin:6px 0 2px; } h1 b { color:var(--acc); }
+  p.sub { color:var(--dim); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:13px; color:var(--dim); margin:12px 0 4px; }
+  input[type=text], input[type=url] { width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:#0f1320; color:var(--fg); font-size:17px; }
+  #code { text-transform:uppercase; letter-spacing:6px; font-size:26px; text-align:center; font-weight:700; }
+  .row { display:flex; gap:10px; } .row label.opt { flex:1; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; text-align:center; color:var(--fg); font-size:16px; }
+  .row input { display:none; } .row input:checked + span { color:var(--acc); font-weight:700; }
+  button { width:100%; margin-top:16px; padding:15px; border:0; border-radius:14px; background:var(--acc); color:#fff; font-size:18px; font-weight:700; }
+  button:disabled { opacity:.5; }
+  #msg { margin-top:12px; min-height:22px; font-size:15px; } .ok { color:#4cd08a; } .err { color:#ff8087; }
+  .soon { opacity:.55; } .soon h2 { font-size:16px; margin:0 0 4px; }
+  small { color:var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>NIVO<b>tv</b> · Mando</h1>
+  <p class="sub">Controla tu TV desde el celular.</p>
+
+  <div class="card">
+    <label for="code">Código que muestra el TV</label>
+    <input id="code" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="K7M2QX">
+    <div id="conn"><small>Sin conectar</small></div>
+  </div>
+
+  <div class="card">
+    <strong>Agregar una lista</strong>
+    <label for="name">Nombre (opcional)</label>
+    <input id="name" type="text" placeholder="Mi lista">
+    <label for="url">Enlace de la lista M3U</label>
+    <input id="url" type="url" placeholder="https://gist.githubusercontent.com/…/lista.m3u" inputmode="url">
+    <label>Tipo</label>
+    <div class="row">
+      <label class="opt"><input type="radio" name="type" value="tv" checked><span>TV</span></label>
+      <label class="opt"><input type="radio" name="type" value="radio"><span>Radio</span></label>
+    </div>
+    <button id="send">Enviar al TV</button>
+    <div id="msg"></div>
+    <small>El TV te pedirá confirmar antes de agregarla.</small>
+  </div>
+
+  <div class="card soon">
+    <h2>Próximamente</h2>
+    <small>Mando a distancia, búsqueda por voz y control de volumen desde esta misma página.</small>
+  </div>
+</main>
+
+<script>
+(function () {
+  // Mismo servicio que configura el TV en js/config.js (LINK_SERVER). Cambialo aqui si usas otro.
+  var SERVER = "https://ntfy.sh";
+  var $ = function (id) { return document.getElementById(id); };
+  var es = null, curTopic = "";
+
+  function topic(c) { return "nivotv-" + c.toLowerCase(); }
+  function say(t, cls) { $("msg").textContent = t; $("msg").className = cls || ""; }
+
+  function listen(code) {
+    var t = topic(code);
+    if (es && curTopic === t) { return; }
+    if (es) { es.close(); }
+    curTopic = t;
+    if (!window.EventSource) { return; }
+    es = new EventSource(SERVER + "/" + t + "/sse");
+    es.onopen = function () { $("conn").innerHTML = "<small class='ok'>Conectado al canal " + code.toUpperCase() + "</small>"; };
+    es.onerror = function () { $("conn").innerHTML = "<small>Reconectando…</small>"; };
+    es.onmessage = function (e) {
+      try {
+        var d = JSON.parse(e.data), m;
+        if (d.event !== "message") { return; }
+        m = JSON.parse(d.message);
+        if (m && m.from === "tv" && m.t === "ack") { say(m.msg || (m.ok ? "Listo" : "Error"), m.ok ? "ok" : "err"); $("send").disabled = false; }
+      } catch (x) {}
+    };
+  }
+
+  function onCode() {
+    var c = $("code").value.replace(/[^a-zA-Z0-9]/g, "");
+    $("code").value = c.toUpperCase();
+    if (c.length === 6) { listen(c); try { localStorage.setItem("nivotv.code", c.toUpperCase()); } catch (e) {} }
+  }
+  $("code").addEventListener("input", onCode);
+
+  var h = (location.hash || "").replace("#", "");
+  if (/^[A-Za-z0-9]{6}$/.test(h)) { $("code").value = h.toUpperCase(); }
+  else { try { $("code").value = localStorage.getItem("nivotv.code") || ""; } catch (e) {} }
+  onCode();
+
+  $("send").addEventListener("click", function () {
+    var code = $("code").value.trim();
+    var url = $("url").value.trim();
+    var type = document.querySelector("input[name=type]:checked").value;
+    if (code.length !== 6) { say("Escribe el código de 6 caracteres del TV", "err"); return; }
+    if (!/^https?:\/\/\S{4,}$/i.test(url)) { say("El enlace debe empezar por http:// o https://", "err"); return; }
+    $("send").disabled = true;
+    say("Enviando…");
+    var body = JSON.stringify({ t: "addlist", name: $("name").value.trim(), url: url, type: type });
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", SERVER + "/" + topic(code), true);
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) { say("Enviado. Confirma en el TV…", "ok"); setTimeout(function () { $("send").disabled = false; }, 4000); }
+      else { say("No se pudo enviar (" + xhr.status + ")", "err"); $("send").disabled = false; }
+    };
+    xhr.onerror = function () { say("Sin conexión", "err"); $("send").disabled = false; };
+    xhr.send(body);
+  });
+})();
+</script>
+</body>
+</html>
