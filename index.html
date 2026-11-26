@@ -2,119 +2,281 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0b0e14">
 <title>NIVOtv · Mando</title>
 <style>
-  :root { --bg:#0b0e14; --card:#161b26; --line:#232a3a; --fg:#eef1f8; --dim:#8b93a7; --acc:#e5484d; }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
-  main { max-width:520px; margin:0 auto; padding:22px 18px 40px; }
-  h1 { font-size:26px; margin:6px 0 2px; } h1 b { color:var(--acc); }
-  p.sub { color:var(--dim); margin:0 0 20px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  :root { --bg:#0b0e14; --card:#161b26; --line:#232a3a; --fg:#eef1f8; --dim:#8b93a7; --acc:#e5484d; --key:#1d2434; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:14px 16px 90px; }
+  h1 { font-size:24px; margin:4px 0 0; } h1 b { color:var(--acc); }
+  .top { display:flex; justify-content:space-between; align-items:flex-end; }
+  #state { font-size:13px; color:var(--dim); margin:2px 0 12px; min-height:18px; } #state.ok { color:#4cd08a; } #state.err { color:#ff8087; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:14px; }
   label { display:block; font-size:13px; color:var(--dim); margin:12px 0 4px; }
-  input[type=text], input[type=url] { width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:#0f1320; color:var(--fg); font-size:17px; }
-  #code { text-transform:uppercase; letter-spacing:6px; font-size:26px; text-align:center; font-weight:700; }
-  .row { display:flex; gap:10px; } .row label.opt { flex:1; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; text-align:center; color:var(--fg); font-size:16px; }
+  input[type=text], input[type=url], input[type=search] { width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--line); background:#0f1320; color:var(--fg); font-size:17px; }
+  #code { text-transform:uppercase; letter-spacing:6px; font-size:24px; text-align:center; font-weight:700; }
+  button { font:inherit; color:inherit; border:0; }
+  .btn { width:100%; margin-top:14px; padding:15px; border-radius:14px; background:var(--acc); color:#fff; font-size:18px; font-weight:700; }
+  .btn:disabled { opacity:.5; }
+  .row { display:flex; gap:10px; } .row label.opt { flex:1; margin:0; padding:12px; border:1px solid var(--line); border-radius:12px; text-align:center; color:var(--fg); }
   .row input { display:none; } .row input:checked + span { color:var(--acc); font-weight:700; }
-  button { width:100%; margin-top:16px; padding:15px; border:0; border-radius:14px; background:var(--acc); color:#fff; font-size:18px; font-weight:700; }
-  button:disabled { opacity:.5; }
-  #msg { margin-top:12px; min-height:22px; font-size:15px; } .ok { color:#4cd08a; } .err { color:#ff8087; }
-  .soon { opacity:.55; } .soon h2 { font-size:16px; margin:0 0 4px; }
+  #msg, #smsg { margin-top:10px; min-height:20px; font-size:15px; } .ok { color:#4cd08a; } .err { color:#ff8087; }
   small { color:var(--dim); }
+
+  /* pestanas fijas abajo */
+  nav { position:fixed; left:0; right:0; bottom:0; display:flex; background:#0e121b; border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
+  nav button { flex:1; padding:14px 4px 12px; background:none; color:var(--dim); font-size:13px; }
+  nav button b { display:block; font-size:22px; font-weight:400; }
+  nav button.on { color:var(--acc); }
+  .tab { display:none; } .tab.on { display:block; }
+
+  /* mando */
+  .pad { position:relative; width:260px; height:260px; margin:6px auto 16px; border-radius:50%; background:var(--key); border:1px solid var(--line); }
+  .pad button { position:absolute; background:none; color:var(--fg); font-size:30px; width:84px; height:84px; border-radius:50%; }
+  .pad button:active, .k:active { background:#2c3550; }
+  .pad .u { left:88px; top:6px; } .pad .d { left:88px; bottom:6px; } .pad .l { left:6px; top:88px; } .pad .r { right:6px; top:88px; }
+  .pad .ok { left:88px; top:88px; background:var(--acc); font-size:20px; font-weight:700; }
+  .keys { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+  .k { padding:15px 4px; border-radius:14px; background:var(--key); border:1px solid var(--line); font-size:17px; text-align:center; }
+  .k small { display:block; font-size:11px; }
+  .nums { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+
+  /* buscar */
+  .srch { display:flex; gap:8px; } .srch input { flex:1; } .mic { width:52px; border-radius:12px; background:var(--key); border:1px solid var(--line); font-size:22px; }
+  .mic.rec { background:var(--acc); }
+  .res { margin-top:12px; } .res button { display:block; width:100%; text-align:left; padding:13px 14px; margin-bottom:8px; border-radius:12px; background:var(--key); border:1px solid var(--line); font-size:16px; }
+  .res button span { display:block; font-size:12px; color:var(--dim); }
 </style>
 </head>
 <body>
 <main>
-  <h1>NIVO<b>tv</b> · Mando</h1>
-  <p class="sub">Controla tu TV desde el celular.</p>
+  <div class="top"><h1>NIVO<b>tv</b> · Mando</h1></div>
+  <div id="state">Sin conectar</div>
 
   <div class="card">
-    <label for="code">Código que muestra el TV</label>
+    <label for="code" style="margin-top:0">Código que muestra el TV</label>
     <input id="code" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="K7M2QX">
-    <div id="conn"><small>Sin conectar</small></div>
   </div>
 
-  <div class="card">
-    <strong>Agregar una lista</strong>
-    <label for="name">Nombre (opcional)</label>
-    <input id="name" type="text" placeholder="Mi lista">
-    <label for="url">Enlace de la lista M3U</label>
-    <input id="url" type="url" placeholder="https://gist.githubusercontent.com/…/lista.m3u" inputmode="url">
-    <label>Tipo</label>
-    <div class="row">
-      <label class="opt"><input type="radio" name="type" value="tv" checked><span>TV</span></label>
-      <label class="opt"><input type="radio" name="type" value="radio"><span>Radio</span></label>
+  <!-- MANDO -->
+  <section class="tab on" id="t-pad">
+    <div class="pad">
+      <button class="u" data-k="UP">▲</button>
+      <button class="d" data-k="DOWN">▼</button>
+      <button class="l" data-k="LEFT">◀</button>
+      <button class="r" data-k="RIGHT">▶</button>
+      <button class="ok" data-k="OK">OK</button>
     </div>
-    <button id="send">Enviar al TV</button>
-    <div id="msg"></div>
-    <small>El TV te pedirá confirmar antes de agregarla.</small>
-  </div>
+    <div class="keys">
+      <button class="k" data-k="BACK">↩<small>Atrás</small></button>
+      <button class="k" data-k="MENU">☰<small>Opciones</small></button>
+      <button class="k" data-k="INFO">ⓘ<small>Info</small></button>
+      <button class="k" data-k="CH_DOWN">CH −</button>
+      <button class="k" data-k="PLAYPAUSE">⏯</button>
+      <button class="k" data-k="CH_UP">CH +</button>
+      <button class="k" data-v="-1">VOL −</button>
+      <button class="k" data-v="mute">🔇</button>
+      <button class="k" data-v="1">VOL +</button>
+    </div>
+    <div class="nums">
+      <button class="k" data-k="1">1</button><button class="k" data-k="2">2</button><button class="k" data-k="3">3</button>
+      <button class="k" data-k="4">4</button><button class="k" data-k="5">5</button><button class="k" data-k="6">6</button>
+      <button class="k" data-k="7">7</button><button class="k" data-k="8">8</button><button class="k" data-k="9">9</button>
+      <button class="k" data-k="STOP">⏹</button><button class="k" data-k="0">0</button><button class="k" data-k="BACK">⌫</button>
+    </div>
+    <p><small>Mantén un número del TV (1 a 9) para asignar un atajo. «Opciones» equivale a mantener OK.</small></p>
+  </section>
 
-  <div class="card soon">
-    <h2>Próximamente</h2>
-    <small>Mando a distancia, búsqueda por voz y control de volumen desde esta misma página.</small>
-  </div>
+  <!-- BUSCAR -->
+  <section class="tab" id="t-search">
+    <div class="card">
+      <strong>Buscar un canal</strong>
+      <div class="srch" style="margin-top:10px">
+        <input id="q" type="search" placeholder="Escribe o habla el nombre" autocomplete="off">
+        <button class="mic" id="mic" title="Dictar por voz">🎤</button>
+      </div>
+      <button class="btn" id="go">Buscar en el TV</button>
+      <div id="smsg"></div>
+      <div class="res" id="res"></div>
+    </div>
+    <p><small>Tip: también puedes usar el micrófono del teclado del celular. Toca un resultado para verlo en el TV.</small></p>
+  </section>
+
+  <!-- LISTAS -->
+  <section class="tab" id="t-list">
+    <div class="card">
+      <strong>Agregar una lista</strong>
+      <label for="name">Nombre (opcional)</label>
+      <input id="name" type="text" placeholder="Mi lista">
+      <label for="url">Enlace de la lista M3U</label>
+      <input id="url" type="url" placeholder="https://gist.githubusercontent.com/…/lista.m3u" inputmode="url">
+      <label>Tipo</label>
+      <div class="row">
+        <label class="opt"><input type="radio" name="type" value="tv" checked><span>TV</span></label>
+        <label class="opt"><input type="radio" name="type" value="radio"><span>Radio</span></label>
+      </div>
+      <button class="btn" id="send">Enviar al TV</button>
+      <div id="msg"></div>
+      <small>El TV te pedirá confirmar antes de agregarla.</small>
+    </div>
+  </section>
 </main>
+
+<nav>
+  <button data-tab="t-pad" class="on"><b>🎮</b>Mando</button>
+  <button data-tab="t-search"><b>🔎</b>Buscar</button>
+  <button data-tab="t-list"><b>➕</b>Listas</button>
+</nav>
 
 <script>
 (function () {
   // Mismo servicio que configura el TV en js/config.js (LINK_SERVER). Cambialo aqui si usas otro.
   var SERVER = "https://ntfy.sh";
   var $ = function (id) { return document.getElementById(id); };
-  var es = null, curTopic = "";
+  var es = null, curTopic = "", helloTimer = null, gotState = false;
 
+  function code() { return $("code").value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase(); }
   function topic(c) { return "nivotv-" + c.toLowerCase(); }
-  function say(t, cls) { $("msg").textContent = t; $("msg").className = cls || ""; }
+  function state(t, cls) { $("state").textContent = t; $("state").className = cls || ""; }
+  function buzz() { try { navigator.vibrate && navigator.vibrate(12); } catch (e) {} }
 
-  function listen(code) {
-    var t = topic(code);
+  function post(obj, cb) {
+    var c = code();
+    if (c.length !== 6) { state("Escribe el código de 6 caracteres del TV", "err"); if (cb) { cb(false); } return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", SERVER + "/" + topic(c), true);
+    xhr.onload = function () {
+      if (xhr.status >= 200 && xhr.status < 300) { if (cb) { cb(true); } }
+      else { state(xhr.status === 429 ? "Demasiados envíos seguidos; espera unos segundos" : "No se pudo enviar (" + xhr.status + ")", "err"); if (cb) { cb(false); } }
+    };
+    xhr.onerror = function () { state("Sin conexión", "err"); if (cb) { cb(false); } };
+    xhr.send(JSON.stringify(obj));
+  }
+
+  /* ---- conexion con el TV ---- */
+  function hello() {
+    gotState = false;
+    clearTimeout(helloTimer);
+    post({ t: "hello" });
+    helloTimer = setTimeout(function () {
+      if (!gotState) { state("El TV no responde. ¿Está activado «Control remoto» en Ajustes del TV?", "err"); }
+    }, 5000);
+  }
+
+  function listen() {
+    var c = code(), t;
+    if (c.length !== 6) { return; }
+    t = topic(c);
     if (es && curTopic === t) { return; }
     if (es) { es.close(); }
     curTopic = t;
-    if (!window.EventSource) { return; }
+    try { localStorage.setItem("nivotv.code", c); } catch (e) {}
+    if (!window.EventSource) { state("Este navegador no recibe respuestas del TV", "err"); return; }
     es = new EventSource(SERVER + "/" + t + "/sse");
-    es.onopen = function () { $("conn").innerHTML = "<small class='ok'>Conectado al canal " + code.toUpperCase() + "</small>"; };
-    es.onerror = function () { $("conn").innerHTML = "<small>Reconectando…</small>"; };
+    es.onopen = function () { state("Conectando con el TV…"); hello(); };
+    es.onerror = function () { state("Reconectando…"); };
     es.onmessage = function (e) {
-      try {
-        var d = JSON.parse(e.data), m;
-        if (d.event !== "message") { return; }
-        m = JSON.parse(d.message);
-        if (m && m.from === "tv" && m.t === "ack") { say(m.msg || (m.ok ? "Listo" : "Error"), m.ok ? "ok" : "err"); $("send").disabled = false; }
-      } catch (x) {}
+      var d, m;
+      try { d = JSON.parse(e.data); if (d.event !== "message") { return; } m = JSON.parse(d.message); } catch (x) { return; }
+      if (!m || m.from !== "tv") { return; }
+      if (m.t === "state") {
+        gotState = true;
+        state("TV conectado" + (m.now ? " · viendo: " + m.now : ""), "ok");
+      } else if (m.t === "ack") {
+        var txt = m.msg || (m.ok ? "Listo" : "Error");
+        if (m.of === "addlist") { say("msg", txt, m.ok); $("send").disabled = false; }
+        else { state(txt, m.ok ? "ok" : "err"); }
+      } else if (m.t === "results") {
+        showResults(m);
+      }
     };
   }
 
-  function onCode() {
-    var c = $("code").value.replace(/[^a-zA-Z0-9]/g, "");
-    $("code").value = c.toUpperCase();
-    if (c.length === 6) { listen(c); try { localStorage.setItem("nivotv.code", c.toUpperCase()); } catch (e) {} }
-  }
-  $("code").addEventListener("input", onCode);
-
+  $("code").addEventListener("input", function () { $("code").value = code(); if (code().length === 6) { listen(); } });
   var h = (location.hash || "").replace("#", "");
   if (/^[A-Za-z0-9]{6}$/.test(h)) { $("code").value = h.toUpperCase(); }
   else { try { $("code").value = localStorage.getItem("nivotv.code") || ""; } catch (e) {} }
-  onCode();
+  listen();
 
+  /* ---- pestanas ---- */
+  var tabs = document.querySelectorAll("nav button");
+  Array.prototype.forEach.call(tabs, function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(tabs, function (x) { x.className = x === b ? "on" : ""; });
+      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (s) { s.className = "tab" + (s.id === b.getAttribute("data-tab") ? " on" : ""); });
+    });
+  });
+
+  /* ---- mando (toque y mantener repite las flechas) ---- */
+  function press(b) {
+    var k = b.getAttribute("data-k"), v = b.getAttribute("data-v");
+    buzz();
+    if (k) { post({ t: "key", k: k }); } else if (v) { post({ t: "volume", d: v === "mute" ? "mute" : parseInt(v, 10) }); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("#t-pad button"), function (b) {
+    var rep = null, delay = null, arrow = /^(UP|DOWN|LEFT|RIGHT|CH_UP|CH_DOWN)$/.test(b.getAttribute("data-k") || "");
+    function stop() { clearTimeout(delay); clearInterval(rep); }
+    b.addEventListener("touchstart", function (e) {
+      e.preventDefault(); press(b);
+      if (arrow) { delay = setTimeout(function () { rep = setInterval(function () { press(b); }, 330); }, 450); }
+    }, { passive: false });
+    b.addEventListener("touchend", stop); b.addEventListener("touchcancel", stop);
+    b.addEventListener("click", function () { if (!("ontouchstart" in window)) { press(b); } });
+  });
+
+  /* ---- buscar ---- */
+  function say(id, t, ok) { $(id).textContent = t; $(id).className = ok ? "ok" : "err"; }
+  function search() {
+    var q = $("q").value.trim();
+    if (!q) { return; }
+    say("smsg", "Buscando en el TV…", true);
+    $("res").innerHTML = "";
+    post({ t: "search", q: q });
+  }
+  function showResults(m) {
+    var box = $("res"), i, b, it;
+    box.innerHTML = "";
+    say("smsg", m.items.length ? (m.total + " resultado" + (m.total === 1 ? "" : "s") + (m.total > m.items.length ? " (se muestran " + m.items.length + ")" : "")) : "Sin resultados para «" + m.q + "»", !!m.items.length);
+    m.items.forEach(function (it) {
+      b = document.createElement("button");
+      b.innerHTML = "<span></span>";
+      b.insertBefore(document.createTextNode(it.n + "   " + it.name), b.firstChild);
+      b.lastChild.textContent = it.group || "";
+      b.addEventListener("click", function () { buzz(); post({ t: "play", n: it.n }); state("Enviando al TV…"); });
+      box.appendChild(b);
+    });
+  }
+  $("go").addEventListener("click", search);
+  $("q").addEventListener("keydown", function (e) { if (e.keyCode === 13) { search(); } });
+
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { $("mic").style.display = "none"; }
+  else {
+    $("mic").addEventListener("click", function () {
+      var r = new SR(), mic = $("mic");
+      r.lang = "es-CO"; r.interimResults = false; r.maxAlternatives = 1;
+      mic.className = "mic rec";
+      r.onresult = function (e) { $("q").value = e.results[0][0].transcript; search(); };
+      r.onend = function () { mic.className = "mic"; };
+      r.onerror = function () { mic.className = "mic"; say("smsg", "No se pudo usar el micrófono (revisa el permiso)", false); };
+      try { r.start(); } catch (x) { mic.className = "mic"; }
+    });
+  }
+
+  /* ---- agregar lista ---- */
   $("send").addEventListener("click", function () {
-    var code = $("code").value.trim();
     var url = $("url").value.trim();
     var type = document.querySelector("input[name=type]:checked").value;
-    if (code.length !== 6) { say("Escribe el código de 6 caracteres del TV", "err"); return; }
-    if (!/^https?:\/\/\S{4,}$/i.test(url)) { say("El enlace debe empezar por http:// o https://", "err"); return; }
+    if (code().length !== 6) { say("msg", "Escribe el código de 6 caracteres del TV", false); return; }
+    if (!/^https?:\/\/\S{4,}$/i.test(url)) { say("msg", "El enlace debe empezar por http:// o https://", false); return; }
     $("send").disabled = true;
-    say("Enviando…");
-    var body = JSON.stringify({ t: "addlist", name: $("name").value.trim(), url: url, type: type });
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", SERVER + "/" + topic(code), true);
-    xhr.onload = function () {
-      if (xhr.status >= 200 && xhr.status < 300) { say("Enviado. Confirma en el TV…", "ok"); setTimeout(function () { $("send").disabled = false; }, 4000); }
-      else { say("No se pudo enviar (" + xhr.status + ")", "err"); $("send").disabled = false; }
-    };
-    xhr.onerror = function () { say("Sin conexión", "err"); $("send").disabled = false; };
-    xhr.send(body);
+    say("msg", "Enviando…", true);
+    post({ t: "addlist", name: $("name").value.trim(), url: url, type: type }, function (ok) {
+      if (ok) { say("msg", "Enviado. Confirma en el TV…", true); setTimeout(function () { $("send").disabled = false; }, 4000); }
+      else { $("send").disabled = false; }
+    });
   });
 })();
 </script>
